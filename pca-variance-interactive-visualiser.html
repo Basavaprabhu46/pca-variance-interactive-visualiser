@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Shadow Machine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b0f14;
+        --panel: #121922;
+        --panel-2: #0e141c;
+        --line: #212b38;
+        --text: #e8edf3;
+        --muted: #7c8a9c;
+        --gold: #f2b84b;
+        --gold-dim: #8a6a2e;
+        --cyan: #56d0c9;
+        --magenta: #ef6f9e;
+        --blue: #6fa8e0;
+        --grid-dot: #1a2330;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Inter", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 28px 20px 60px;
+      }
+
+      header {
+        margin-bottom: 22px;
+      }
+      .eyebrow {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin: 0 0 8px;
+      }
+      h1 {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-size: clamp(28px, 4vw, 42px);
+        margin: 0 0 10px;
+        letter-spacing: -0.01em;
+      }
+      header p {
+        color: var(--muted);
+        max-width: 640px;
+        line-height: 1.55;
+        margin: 0;
+        font-size: 15px;
+      }
+
+      .stage {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 18px;
+        margin-top: 26px;
+      }
+      @media (max-width: 880px) {
+        .stage {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 18px;
+      }
+      .panel-title {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 0 0 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        touch-action: none;
+      }
+      #canvasSvg {
+        background: var(--panel-2);
+        border-radius: 10px;
+        cursor: crosshair;
+      }
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 10px;
+        line-height: 1.5;
+      }
+      .hint b {
+        color: var(--text);
+        font-weight: 500;
+      }
+
+      .side-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      .angle-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 4px;
+      }
+      input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 4px;
+        border-radius: 2px;
+        background: linear-gradient(90deg, var(--line), var(--line));
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--gold);
+        border: 2px solid #0b0f14;
+        cursor: pointer;
+        box-shadow: 0 0 0 3px rgba(242, 184, 75, 0.15);
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--gold);
+        border: 2px solid #0b0f14;
+        cursor: pointer;
+      }
+      .angle-val {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        color: var(--gold);
+        min-width: 52px;
+        text-align: right;
+      }
+
+      .stat-big {
+        font-family: "Fraunces", serif;
+        font-weight: 600;
+        font-size: 40px;
+        line-height: 1;
+        margin: 6px 0 2px;
+        color: var(--text);
+      }
+      .stat-label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .stat-sub {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 10px;
+      }
+
+      .pct-bar-track {
+        height: 8px;
+        border-radius: 5px;
+        background: var(--line);
+        overflow: hidden;
+        margin-top: 12px;
+      }
+      .pct-bar-fill {
+        height: 100%;
+        border-radius: 5px;
+        background: linear-gradient(90deg, var(--magenta), var(--gold));
+        width: 0%;
+        transition: width 0.08s linear;
+      }
+
+      .feedback {
+        margin-top: 12px;
+        font-size: 13px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--panel-2);
+        color: var(--muted);
+        transition: all 0.2s ease;
+        line-height: 1.5;
+      }
+      .feedback.hot {
+        border-color: var(--gold-dim);
+        color: var(--gold);
+        background: rgba(242, 184, 75, 0.06);
+      }
+
+      .btn-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      button {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        font-weight: 500;
+        background: var(--panel-2);
+        color: var(--text);
+        border: 1px solid var(--line);
+        padding: 9px 13px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      button:hover {
+        border-color: var(--gold-dim);
+        color: var(--gold);
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 2px;
+      }
+      button.primary {
+        background: var(--gold);
+        color: #1a1305;
+        border-color: var(--gold);
+        font-weight: 600;
+      }
+      button.primary:hover {
+        color: #1a1305;
+        filter: brightness(1.08);
+      }
+
+      .legend {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        flex: none;
+      }
+
+      .curve-caption {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+        line-height: 1.5;
+      }
+      .curve-caption b {
+        color: var(--gold);
+        font-weight: 600;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>The Shadow Machine</h1>
+        <p>
+          Rotate the beam. Watch the shadow. A direction is "best" when the
+          shadow it casts is as spread out as possible &mdash; when the points
+          refuse to overlap. Drag points to reshape the cloud, drag the gold
+          handle (or use the slider) to sweep the beam, and watch the curve on
+          the right build itself as you go.
+        </p>
+      </header>
+
+      <div class="stage">
+        <div class="panel">
+          <p class="panel-title">
+            <span>The cloud & the beam</span>
+            <span id="ptCount" style="color: var(--muted)">9 points</span>
+          </p>
+          <svg id="canvasSvg" viewBox="0 0 600 600"></svg>
+          <p class="hint">
+            <b>Click</b> empty space to add a point &middot; <b>drag</b> a point
+            to move it &middot; <b>double-click</b> a point to remove it
+            &middot; <b>drag the gold tip</b> to rotate the beam.
+          </p>
+          <div class="legend">
+            <div class="legend-item">
+              <span class="swatch" style="background: var(--cyan)"></span>data
+              point
+            </div>
+            <div class="legend-item">
+              <span class="swatch" style="background: var(--gold)"></span
+              >direction (the beam)
+            </div>
+            <div class="legend-item">
+              <span class="swatch" style="background: var(--magenta)"></span
+              >shadow / projection
+            </div>
+          </div>
+        </div>
+
+        <div class="side-stack">
+          <div class="panel">
+            <p class="panel-title"><span>Aim the beam</span></p>
+            <div class="angle-row">
+              <input
+                type="range"
+                id="angleSlider"
+                min="0"
+                max="179"
+                step="1"
+                value="45"
+              />
+              <span class="angle-val" id="angleVal">45&deg;</span>
+            </div>
+
+            <div class="stat-label" style="margin-top: 14px">
+              Spread of the shadow (variance)
+            </div>
+            <div class="stat-big" id="varVal">0.00</div>
+            <div class="pct-bar-track">
+              <div class="pct-bar-fill" id="pctFill"></div>
+            </div>
+            <div class="stat-sub" id="pctLabel">
+              0% of the best possible spread
+            </div>
+
+            <div class="feedback" id="feedback">
+              Sweep the slider &mdash; find the angle where the shadow stretches
+              the farthest.
+            </div>
+
+            <div class="btn-row">
+              <button class="primary" id="revealBtn">
+                Reveal best direction
+              </button>
+              <button id="randomBtn">Randomize cloud</button>
+              <button id="resetBtn">Reset</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <p class="panel-title"><span>Spread vs. angle</span></p>
+            <svg id="curveSvg" viewBox="0 0 320 170"></svg>
+            <p class="curve-caption">
+              Every angle from 0&deg; to 180&deg;, plotted against how spread
+              out the shadow is at that angle. The <b>gold peak</b> is the
+              objective answer to "what's the main direction of this cloud?"
+              &mdash; no two people need to disagree about it.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const NS = "http://www.w3.org/2000/svg";
+        const reducedMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
+
+        // ---------- state ----------
+        let points = []; // {x,y} in world coords
+        let thetaDeg = 45; // current beam angle, 0..179
+        const R = 250; // beam half-length in px
+        const scale = 34; // px per world unit
+        const center = { x: 300, y: 300 };
+
+        function worldToScreen(p) {
+          return { x: center.x + p.x * scale, y: center.y - p.y * scale };
+        }
+        function screenToWorld(p) {
+          return { x: (p.x - center.x) / scale, y: -(p.y - center.y) / scale };
+        }
+
+        function gaussian() {
+          let u = 0,
+            v = 0;
+          while (u === 0) u = Math.random();
+          while (v === 0) v = Math.random();
+          return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        }
+
+        function randomCloud() {
+          const majorAngle = Math.random() * Math.PI;
+          const majorStd = 2.1 + Math.random() * 1.0;
+          const minorStd = 0.35 + Math.random() * 0.4;
+          const n = 8 + Math.floor(Math.random() * 4);
+          const cx = (Math.random() - 0.5) * 1.2,
+            cy = (Math.random() - 0.5) * 1.2;
+          const ca = Math.cos(majorAngle),
+            sa = Math.sin(majorAngle);
+          const pts = [];
+          for (let i = 0; i < n; i++) {
+            const a = gaussian() * majorStd,
+              b = gaussian() * minorStd;
+            pts.push({ x: cx + a * ca - b * sa, y: cy + a * sa + b * ca });
+          }
+          return pts;
+        }
+
+        function defaultCloud() {
+          // a clean, legible diagonal demo cloud
+          return [
+            { x: -4.6, y: -3.9 },
+            { x: -3.4, y: -2.7 },
+            { x: -2.5, y: -2.9 },
+            { x: -1.1, y: -0.6 },
+            { x: 0.2, y: 0.4 },
+            { x: 1.0, y: 1.6 },
+            { x: 2.3, y: 1.4 },
+            { x: 3.1, y: 2.8 },
+            { x: 4.5, y: 3.7 },
+          ];
+        }
+
+        points = defaultCloud();
+
+        // ---------- math ----------
+        function mean(pts) {
+          const m = { x: 0, y: 0 };
+          pts.forEach((p) => {
+            m.x += p.x;
+            m.y += p.y;
+          });
+          m.x /= pts.length;
+          m.y /= pts.length;
+          return m;
+        }
+
+        function varianceAtAngle(pts, m, deg) {
+          const rad = (deg * Math.PI) / 180;
+          const c = Math.cos(rad),
+            s = Math.sin(rad);
+          let sumSq = 0;
+          pts.forEach((p) => {
+            const t = (p.x - m.x) * c + (p.y - m.y) * s;
+            sumSq += t * t;
+          });
+          return sumSq / pts.length;
+        }
+
+        function bestAngle(pts) {
+          const m = mean(pts);
+          let best = 0,
+            bestV = -1;
+          for (let d = 0; d < 180; d += 0.5) {
+            const v = varianceAtAngle(pts, m, d);
+            if (v > bestV) {
+              bestV = v;
+              best = d;
+            }
+          }
+          return { angle: best, variance: bestV };
+        }
+
+        // ---------- canvas svg setup ----------
+        const canvasSvg = document.getElementById("canvasSvg");
+
+        function el(tag, attrs) {
+          const e = document.createElementNS(NS, tag);
+          for (const k in attrs) e.setAttribute(k, attrs[k]);
+          return e;
+        }
+
+        // static grid (built once)
+        const gridLayer = el("g", {});
+        canvasSvg.appendChild(gridLayer);
+        for (let gx = -8; gx <= 8; gx++) {
+          for (let gy = -8; gy <= 8; gy++) {
+            const s = worldToScreen({ x: gx, y: gy });
+            if (s.x < 0 || s.x > 600 || s.y < 0 || s.y > 600) continue;
+            gridLayer.appendChild(
+              el("circle", {
+                cx: s.x,
+                cy: s.y,
+                r: 1.1,
+                fill: "var(--grid-dot)",
+              }),
+            );
+          }
+        }
+        // axes through centroid will be drawn dynamically; static origin cross
+        const axisLayer = el("g", {});
+        canvasSvg.appendChild(axisLayer);
+
+        const shadowLayer = el("g", {});
+        canvasSvg.appendChild(shadowLayer);
+        const beamLayer = el("g", {});
+        canvasSvg.appendChild(beamLayer);
+        const projLayer = el("g", {});
+        canvasSvg.appendChild(projLayer);
+        const pointLayer = el("g", {});
+        canvasSvg.appendChild(pointLayer);
+        const handleLayer = el("g", {});
+        canvasSvg.appendChild(handleLayer);
+
+        function clearLayer(g) {
+          while (g.firstChild) g.removeChild(g.firstChild);
+        }
+
+        function getSvgPoint(evt) {
+          const pt = canvasSvg.createSVGPoint();
+          pt.x = evt.clientX;
+          pt.y = evt.clientY;
+          const ctm = canvasSvg.getScreenCTM().inverse();
+          return pt.matrixTransform(ctm);
+        }
+
+        // ---------- render ----------
+        const angleSlider = document.getElementById("angleSlider");
+        const angleVal = document.getElementById("angleVal");
+        const varVal = document.getElementById("varVal");
+        const pctFill = document.getElementById("pctFill");
+        const pctLabel = document.getElementById("pctLabel");
+        const feedback = document.getElementById("feedback");
+        const ptCount = document.getElementById("ptCount");
+        const curveSvg = document.getElementById("curveSvg");
+
+        let cachedBest = bestAngle(points);
+
+        function render() {
+          const m = mean(points);
+          const rad = (thetaDeg * Math.PI) / 180;
+          const dir = { x: Math.cos(rad), y: Math.sin(rad) };
+          const cS = worldToScreen(m);
+          const dirScreen = { x: dir.x, y: -dir.y };
+
+          // axis line through centroid
+          clearLayer(axisLayer);
+          axisLayer.appendChild(
+            el("line", {
+              x1: cS.x - dirScreen.x * R,
+              y1: cS.y - dirScreen.y * R,
+              x2: cS.x + dirScreen.x * R,
+              y2: cS.y + dirScreen.y * R,
+              stroke: "var(--gold)",
+              "stroke-width": 2.2,
+              opacity: 0.85,
+            }),
+          );
+          axisLayer.appendChild(
+            el("circle", { cx: cS.x, cy: cS.y, r: 3.5, fill: "var(--gold)" }),
+          );
+
+          // shadow beam glow (soft band)
+          clearLayer(beamLayer);
+          beamLayer.appendChild(
+            el("line", {
+              x1: cS.x - dirScreen.x * R,
+              y1: cS.y - dirScreen.y * R,
+              x2: cS.x + dirScreen.x * R,
+              y2: cS.y + dirScreen.y * R,
+              stroke: "var(--gold)",
+              "stroke-width": 10,
+              opacity: 0.06,
+              "stroke-linecap": "round",
+            }),
+          );
+
+          // shadow lines + projected dots
+          clearLayer(shadowLayer);
+          clearLayer(projLayer);
+          let sumSq = 0;
+          points.forEach((p) => {
+            const t = (p.x - m.x) * dir.x + (p.y - m.y) * dir.y;
+            sumSq += t * t;
+            const proj = { x: m.x + t * dir.x, y: m.y + t * dir.y };
+            const pS = worldToScreen(p),
+              projS = worldToScreen(proj);
+            shadowLayer.appendChild(
+              el("line", {
+                x1: pS.x,
+                y1: pS.y,
+                x2: projS.x,
+                y2: projS.y,
+                stroke: "var(--magenta)",
+                "stroke-width": 1.2,
+                "stroke-dasharray": "3,3",
+                opacity: 0.55,
+              }),
+            );
+            projLayer.appendChild(
+              el("circle", {
+                cx: projS.x,
+                cy: projS.y,
+                r: 4,
+                fill: "var(--magenta)",
+                opacity: 0.85,
+              }),
+            );
+          });
+          const variance = sumSq / points.length;
+
+          // data points (draw last of the "content" so they sit above shadows visually... but under handle)
+          clearLayer(pointLayer);
+          points.forEach((p, i) => {
+            const pS = worldToScreen(p);
+            const c = el("circle", {
+              cx: pS.x,
+              cy: pS.y,
+              r: 7,
+              fill: "var(--cyan)",
+              stroke: "#0b0f14",
+              "stroke-width": 1.5,
+              cursor: "grab",
+            });
+            c.dataset.index = i;
+            c.classList.add("data-point");
+            pointLayer.appendChild(c);
+          });
+
+          // rotation handle at beam tip
+          clearLayer(handleLayer);
+          const tipS = { x: cS.x + dirScreen.x * R, y: cS.y + dirScreen.y * R };
+          handleLayer.appendChild(
+            el("circle", {
+              cx: tipS.x,
+              cy: tipS.y,
+              r: 11,
+              fill: "rgba(242,184,75,.15)",
+            }),
+          );
+          const grip = el("circle", {
+            cx: tipS.x,
+            cy: tipS.y,
+            r: 7,
+            fill: "var(--gold)",
+            stroke: "#0b0f14",
+            "stroke-width": 2,
+            cursor: "grab",
+          });
+          grip.id = "rotHandle";
+          handleLayer.appendChild(grip);
+
+          // stats
+          angleSlider.value = Math.round(thetaDeg);
+          angleVal.textContent = Math.round(thetaDeg) + "\u00b0";
+          varVal.textContent = variance.toFixed(2);
+          ptCount.textContent =
+            points.length + " point" + (points.length === 1 ? "" : "s");
+
+          const pct =
+            cachedBest.variance > 0
+              ? Math.min(100, (variance / cachedBest.variance) * 100)
+              : 0;
+          pctFill.style.width = pct.toFixed(1) + "%";
+          pctLabel.textContent =
+            pct.toFixed(0) + "% of the best possible spread";
+
+          const angleDiff = Math.min(
+            Math.abs(thetaDeg - cachedBest.angle),
+            180 - Math.abs(thetaDeg - cachedBest.angle),
+          );
+          if (pct > 98.5) {
+            feedback.textContent =
+              "🔦 This is it — the shadow can't stretch any farther. This is the objectively best direction.";
+            feedback.classList.add("hot");
+          } else if (pct > 85) {
+            feedback.textContent =
+              "Close. Nudge the angle a bit more toward the peak on the right.";
+            feedback.classList.remove("hot");
+          } else {
+            feedback.textContent =
+              "Keep sweeping — the shadow can spread out much more than this.";
+            feedback.classList.remove("hot");
+          }
+
+          renderCurve(m, variance);
+        }
+
+        function renderCurve(m, currentVariance) {
+          clearLayer(curveSvg);
+          const W = 320,
+            H = 170,
+            pad = { l: 34, r: 10, t: 10, b: 26 };
+          const plotW = W - pad.l - pad.r,
+            plotH = H - pad.t - pad.b;
+          const maxV = Math.max(cachedBest.variance, 0.0001) * 1.08;
+
+          function xFor(deg) {
+            return pad.l + (deg / 179) * plotW;
+          }
+          function yFor(v) {
+            return pad.t + plotH - (v / maxV) * plotH;
+          }
+
+          // axes
+          curveSvg.appendChild(
+            el("line", {
+              x1: pad.l,
+              y1: pad.t,
+              x2: pad.l,
+              y2: pad.t + plotH,
+              stroke: "var(--line)",
+              "stroke-width": 1,
+            }),
+          );
+          curveSvg.appendChild(
+            el("line", {
+              x1: pad.l,
+              y1: pad.t + plotH,
+              x2: pad.l + plotW,
+              y2: pad.t + plotH,
+              stroke: "var(--line)",
+              "stroke-width": 1,
+            }),
+          );
+          [0, 90, 179].forEach((d) => {
+            const x = xFor(d);
+            const t = el("text", {
+              x: x,
+              y: H - 8,
+              fill: "var(--muted)",
+              "font-size": 9,
+              "font-family": "JetBrains Mono, monospace",
+              "text-anchor": d === 0 ? "start" : d === 179 ? "end" : "middle",
+            });
+            t.textContent = d + "\u00b0";
+            curveSvg.appendChild(t);
+          });
+
+          // curve path
+          let d = "";
+          for (let deg = 0; deg <= 179; deg += 2) {
+            const v = varianceAtAngle(points, m, deg);
+            const x = xFor(deg),
+              y = yFor(v);
+            d +=
+              (deg === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+          }
+          curveSvg.appendChild(
+            el("path", {
+              d: d,
+              fill: "none",
+              stroke: "var(--blue)",
+              "stroke-width": 2,
+            }),
+          );
+
+          // best marker
+          const bx = xFor(cachedBest.angle),
+            by = yFor(cachedBest.variance);
+          curveSvg.appendChild(
+            el("line", {
+              x1: bx,
+              y1: by,
+              x2: bx,
+              y2: pad.t + plotH,
+              stroke: "var(--gold)",
+              "stroke-width": 1,
+              "stroke-dasharray": "2,2",
+              opacity: 0.6,
+            }),
+          );
+          curveSvg.appendChild(
+            el("circle", { cx: bx, cy: by, r: 4.5, fill: "var(--gold)" }),
+          );
+
+          // current marker
+          const cx = xFor(thetaDeg),
+            cy = yFor(currentVariance);
+          curveSvg.appendChild(
+            el("line", {
+              x1: cx,
+              y1: pad.t,
+              x2: cx,
+              y2: pad.t + plotH,
+              stroke: "var(--magenta)",
+              "stroke-width": 1,
+              opacity: 0.35,
+            }),
+          );
+          curveSvg.appendChild(
+            el("circle", {
+              cx: cx,
+              cy: cy,
+              r: 5,
+              fill: "var(--magenta)",
+              stroke: "#0b0f14",
+              "stroke-width": 1.5,
+            }),
+          );
+        }
+
+        function recomputeAndRender() {
+          cachedBest = bestAngle(points);
+          render();
+        }
+
+        // ---------- interaction ----------
+        let dragTarget = null; // {type:'point', index} | {type:'rotate'}
+
+        canvasSvg.addEventListener("pointerdown", (evt) => {
+          const target = evt.target;
+          if (target.classList && target.classList.contains("data-point")) {
+            dragTarget = {
+              type: "point",
+              index: parseInt(target.dataset.index),
+            };
+            canvasSvg.setPointerCapture(evt.pointerId);
+            return;
+          }
+          if (target.id === "rotHandle") {
+            dragTarget = { type: "rotate" };
+            canvasSvg.setPointerCapture(evt.pointerId);
+            return;
+          }
+          // empty space click -> add point (cap at 16)
+          if (points.length < 16) {
+            const sp = getSvgPoint(evt);
+            const w = screenToWorld({ x: sp.x, y: sp.y });
+            w.x = Math.max(-7.5, Math.min(7.5, w.x));
+            w.y = Math.max(-7.5, Math.min(7.5, w.y));
+            points.push(w);
+            recomputeAndRender();
+          }
+        });
+
+        canvasSvg.addEventListener("pointermove", (evt) => {
+          if (!dragTarget) return;
+          const sp = getSvgPoint(evt);
+          if (dragTarget.type === "point") {
+            const w = screenToWorld({ x: sp.x, y: sp.y });
+            w.x = Math.max(-7.5, Math.min(7.5, w.x));
+            w.y = Math.max(-7.5, Math.min(7.5, w.y));
+            points[dragTarget.index] = w;
+            recomputeAndRender();
+          } else if (dragTarget.type === "rotate") {
+            const dx = sp.x - center.x,
+              dy = sp.y - center.y;
+            let deg = (Math.atan2(-dy, dx) * 180) / Math.PI;
+            deg = ((deg % 180) + 180) % 180;
+            thetaDeg = deg;
+            render();
+          }
+        });
+
+        window.addEventListener("pointerup", () => {
+          dragTarget = null;
+        });
+
+        canvasSvg.addEventListener("dblclick", (evt) => {
+          const target = evt.target;
+          if (
+            target.classList &&
+            target.classList.contains("data-point") &&
+            points.length > 3
+          ) {
+            points.splice(parseInt(target.dataset.index), 1);
+            recomputeAndRender();
+          }
+        });
+
+        angleSlider.addEventListener("input", () => {
+          thetaDeg = parseFloat(angleSlider.value);
+          render();
+        });
+
+        document.getElementById("revealBtn").addEventListener("click", () => {
+          const target = cachedBest.angle;
+          if (reducedMotion) {
+            thetaDeg = target;
+            render();
+            return;
+          }
+          const start = thetaDeg;
+          let diff = target - start;
+          if (diff > 90) diff -= 180;
+          if (diff < -90) diff += 180;
+          const duration = 550;
+          const t0 = performance.now();
+          function step(now) {
+            const p = Math.min(1, (now - t0) / duration);
+            const ease = 1 - Math.pow(1 - p, 3);
+            thetaDeg = (((start + diff * ease) % 180) + 180) % 180;
+            render();
+            if (p < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+        });
+
+        document.getElementById("randomBtn").addEventListener("click", () => {
+          points = randomCloud();
+          recomputeAndRender();
+        });
+
+        document.getElementById("resetBtn").addEventListener("click", () => {
+          points = defaultCloud();
+          thetaDeg = 45;
+          recomputeAndRender();
+        });
+
+        recomputeAndRender();
+      })();
+    </script>
+  </body>
+</html>
